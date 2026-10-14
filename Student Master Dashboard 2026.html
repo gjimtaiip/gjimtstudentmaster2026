@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GJIMT | Master Data Admission Dashboard 2026</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- SheetJS & JSZip for parsing Excel & Embedded Media directly in Browser -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    :root {
+      --gjimt-navy: #0b2545;
+      --gjimt-navy-dark: #07192f;
+      --gjimt-navy-light: #133966;
+      --gjimt-gold: #c59b27;
+      --gjimt-gold-hover: #b0871d;
+      --gjimt-gold-soft: #fbf6ea;
+      --bg-slate: #f4f6fa;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+      --success: #10b981;
+      --danger: #ef4444;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06);
+      --shadow-md: 0 6px 18px -4px rgba(11,37,69,0.08);
+      --shadow-lg: 0 16px 36px -6px rgba(11,37,69,0.14);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg-slate);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==============================================================
+       1. SECURITY MODAL (PASSWORD: bingo)
+       ============================================================== */
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, #133966 0%, #07192f 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999999;
+      padding: 20px;
+    }
+
+    .auth-box {
+      background: #ffffff;
+      border-radius: 18px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 440px;
+      text-align: center;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.45);
+      border-top: 6px solid var(--gjimt-gold);
+      animation: fadeIn 0.4s ease;
+    }
+
+    .institute-crest {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--gjimt-gold-soft);
+      border: 2px solid var(--gjimt-gold);
+      color: var(--gjimt-navy);
+      font-size: 32px;
+      margin-bottom: 16px;
+    }
+
+    .auth-title {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gjimt-navy);
+      letter-spacing: 0.5px;
+    }
+
+    .auth-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      margin-bottom: 24px;
+    }
+
+    .password-wrapper {
+      position: relative;
+      margin-bottom: 18px;
+    }
+
+    .password-wrapper input {
+      width: 100%;
+      padding: 14px 44px 14px 16px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 10px;
+      font-size: 15px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .password-wrapper input:focus {
+      border-color: var(--gjimt-navy);
+      box-shadow: 0 0 0 4px rgba(11, 37, 69, 0.1);
+    }
+
+    .toggle-pwd {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .btn-login {
+      width: 100%;
+      background: var(--gjimt-navy);
+      color: #ffffff;
+      padding: 13px;
+      font-weight: 600;
+      font-size: 15px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-login:hover {
+      background: var(--gjimt-navy-light);
+    }
+
+    .error-msg {
+      color: var(--danger);
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ==============================================================
+       2. TOP BAR & BRANDING
+       ============================================================== */
+    header.top-header {
+      background: linear-gradient(135deg, var(--gjimt-navy-dark) 0%, var(--gjimt-navy) 100%);
+      color: #fff;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3.5px solid var(--gjimt-gold);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-md);
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 10px;
+      background: #ffffff;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .brand-logo-badge img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .brand-text h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 20px;
+      letter-spacing: 0.8px;
+      color: #ffffff;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 400;
+    }
+
+    .top-stats {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .badge-counter {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .badge-counter strong {
+      color: var(--gjimt-gold);
+      font-weight: 700;
+    }
+
+    /* ==============================================================
+       3. CONTROLS, TABS & TOOLBAR
+       ============================================================== */
+    .dashboard-container {
+      max-width: 1540px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      flex: 1;
+    }
+
+    .controls-panel {
+      background: #ffffff;
+      padding: 18px 24px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    /* Program Tabs */
+    .program-tabs {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      background: var(--bg-slate);
+      border: 1px solid var(--border-color);
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--gjimt-navy);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      background: var(--gjimt-gold-soft);
+      border-color: var(--gjimt-gold);
+    }
+
+    .tab-btn.active {
+      background: var(--gjimt-navy);
+      color: #ffffff;
+      border-color: var(--gjimt-navy);
+      box-shadow: 0 4px 10px rgba(11,37,69,0.2);
+    }
+
+    .tab-btn .count-pill {
+      background: rgba(0,0,0,0.08);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+    }
+
+    .tab-btn.active .count-pill {
+      background: var(--gjimt-gold);
+      color: var(--gjimt-navy);
+      font-weight: 700;
+    }
+
+    /* Search & Filter tools */
+    .filter-tools {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      position: relative;
+      min-width: 280px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 9px 14px 9px 36px;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13.5px;
+      outline: none;
+    }
+
+    .search-box input:focus {
+      border-color: var(--gjimt-navy);
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .btn-action {
+      background: #ffffff;
+      border: 1.5px solid var(--border-color);
+      padding: 8.5px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action:hover {
+      border-color: var(--gjimt-navy);
+      background: var(--bg-slate);
+    }
+
+    /* Auto load status bar */
+    .sync-status-bar {
+      margin-bottom: 20px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    /* ==============================================================
+       4. STUDENT CARDS GRID (PRIMARY SCREEN)
+       ============================================================== */
+    .students-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 22px;
+    }
+
+    .student-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    .student-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: rgba(197, 155, 39, 0.4);
+    }
+
+    .card-top-bar {
+      background: linear-gradient(90deg, #f8fafc 0%, #ffffff 100%);
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .roll-pill {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--gjimt-navy);
+      background: var(--gjimt-gold-soft);
+      border: 1px solid rgba(197, 155, 39, 0.3);
+      padding: 2px 10px;
+      border-radius: 12px;
+    }
+
+    .gender-caste-tags {
+      display: flex;
+      gap: 6px;
+    }
+
+    .mini-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #e2e8f0;
+      color: #475569;
+    }
+
+    .mini-tag.female {
+      background: #fce7f3;
+      color: #be185d;
+    }
+
+    .mini-tag.male {
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+
+    /* Photo & Signature Section */
+    .card-id-visuals {
+      padding: 18px 18px 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .portrait-sign-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 105px;
+      flex-shrink: 0;
+    }
+
+    .photo-frame {
+      width: 100px;
+      height: 120px;
+      border-radius: 8px;
+      border: 2px solid var(--gjimt-gold);
+      background: #f1f5f9;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+      position: relative;
+    }
+
+    .photo-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top center;
+    }
+
+    .photo-placeholder {
+      color: #94a3b8;
+      font-size: 38px;
+    }
+
+    .signature-slot {
+      margin-top: 6px;
+      width: 100px;
+      height: 38px;
+      border: 1px dashed #cbd5e1;
+      border-radius: 4px;
+      background: #fcfcfd;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      overflow: hidden;
+    }
+
+    .signature-slot img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    .sig-label {
+      font-size: 9.5px;
+      font-style: italic;
+      color: #94a3b8;
+    }
+
+    .student-core-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .student-name {
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--gjimt-navy);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .parent-name {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .parent-name strong {
+      color: var(--text-main);
+    }
+
+    .meta-list {
+      list-style: none;
+      font-size: 12.5px;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .meta-list li {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: #334155;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta-list i {
+      color: var(--gjimt-gold);
+      width: 14px;
+      font-size: 12px;
+    }
+
+    /* Metrics Bar (Academic & Blood Group) */
+    .card-metrics-row {
+      margin: 10px 18px;
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      text-align: center;
+    }
+
+    .metric-item .m-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: block;
+    }
+
+    .metric-item .m-val {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gjimt-navy);
+    }
+
+    /* Card Bottom Action Bar */
+    .card-actions-bar {
+      margin-top: auto;
+      padding: 12px 18px;
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .btn-balance {
+      background: var(--gjimt-gold-soft);
+      border: 1px solid var(--gjimt-gold);
+      color: var(--gjimt-navy);
+      font-size: 12.5px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .btn-balance:hover {
+      background: var(--gjimt-gold);
+      color: #ffffff;
+    }
+
+    /* ==============================================================
+       5. BALANCE DETAILS SLIDING DRAWER / SCREEN
+       ============================================================== */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 25, 47, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .drawer-screen {
+      position: fixed;
+      top: 0;
+      right: -750px;
+      width: 100%;
+      max-width: 720px;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -10px 0 35px rgba(0,0,0,0.25);
+      z-index: 10001;
+      display: flex;
+      flex-direction: column;
+      transition: right 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .drawer-screen.open {
+      right: 0;
+    }
+
+    .drawer-header {
+      background: var(--gjimt-navy);
+      color: #ffffff;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 3px solid var(--gjimt-gold);
+    }
+
+    .drawer-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .drawer-header p {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-top: 2px;
+    }
+
+    .drawer-close {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #ffffff;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .drawer-close:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .detail-section {
+      background: #f8fafc;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .section-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--gjimt-navy);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1.5px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+
+    .field-pair .label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .field-pair .val {
+      font-size: 13.5px;
+      color: #0f172a;
+      font-weight: 500;
+      word-break: break-word;
+      margin-top: 2px;
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      grid-column: 1 / -1;
+      color: var(--text-muted);
+    }
+
+    .empty-state i {
+      font-size: 48px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+    }
+
+    /* Modal for direct file loading */
+    .file-input-wrapper {
+      display: none;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==============================================================
+       AUTHENTICATION GATEWAY (PASSWORD: bingo)
+       ============================================================== -->
+  <div id="lockScreen">
+    <div class="auth-box">
+      <div class="institute-crest">
+        <i class="fa-solid fa-graduation-cap"></i>
+      </div>
+      <h2 class="auth-title">GIAN JYOTI INSTITUTE</h2>
+      <p style="font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--gjimt-gold); margin-top: 2px;">
+        OF MANAGEMENT & TECHNOLOGY, MOHALI
+      </p>
+      <p class="auth-subtitle">Admissions Master Data Portal &bull; Batch 2026</p>
+
+      <form id="authForm" onsubmit="handleAuth(event)">
+        <div class="password-wrapper">
+          <input type="password" id="accessKey" placeholder="Enter Access Password" autocomplete="current-password" autofocus />
+          <i class="fa-regular fa-eye toggle-pwd" id="pwdToggle" onclick="togglePasswordVisibility()"></i>
+        </div>
+        <button type="submit" class="btn-login">
+          <i class="fa-solid fa-lock-open"></i> Access Secure Dashboard
+        </button>
+      </form>
+      <div id="authError" class="error-msg">
+        <i class="fa-solid fa-circle-exclamation"></i> Invalid password. Please try again.
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       MAIN APPLICATION (REVEALED ON BINGO)
+       ============================================================== -->
+  <header class="top-header">
+    <div class="brand-section">
+      <div class="brand-logo-badge">
+        <!-- Official Crest Vector / Logo -->
+        <svg viewBox="0 0 100 100" width="38" height="38">
+          <circle cx="50" cy="50" r="48" fill="#0B2545" stroke="#C59B27" stroke-width="4"/>
+          <path d="M50 20 L25 35 L50 50 L75 35 Z" fill="#C59B27"/>
+          <polygon points="50,55 35,46 35,62 50,71 65,62 65,46" fill="#ffffff" opacity="0.9"/>
+          <line x1="50" y1="50" x2="50" y2="76" stroke="#C59B27" stroke-width="3"/>
+          <circle cx="50" cy="80" r="4" fill="#C59B27"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>GIAN JYOTI INSTITUTE OF MANAGEMENT & TECHNOLOGY</h1>
+        <p>Sector 54, Phase 2, Mohali, Chandigarh &bull; Master Data Admission 2026-27</p>
+      </div>
+    </div>
+
+    <div class="top-stats">
+      <div class="badge-counter">
+        Total Admitted: <strong id="statTotalStudents">Loading...</strong>
+      </div>
+      <label class="btn-action" style="cursor: pointer;">
+        <i class="fa-solid fa-file-excel" style="color: #107c41;"></i> Switch/Reload Excel
+        <input type="file" id="excelPicker" accept=".xlsx, .xls" class="file-input-wrapper" onchange="handleManualExcel(this.files[0])" />
+      </label>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    <!-- Status / Notification -->
+    <div id="syncStatus" class="sync-status-bar">
+      <span><i class="fa-solid fa-spinner fa-spin"></i> Initializing Admission Master Data from Excel repository...</span>
+      <span style="font-weight: 600; font-size: 12px;">Batch 2026</span>
+    </div>
+
+    <!-- Controls & Filtering Panel -->
+    <div class="controls-panel">
+      <!-- 5 Program Tabs -->
+      <div class="program-tabs" id="programTabs">
+        <button class="tab-btn active" onclick="switchProgram('ALL')">
+          <i class="fa-solid fa-border-all"></i> All Programs <span class="count-pill" id="badgeAll">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchProgram('BCA')">
+          BCA <span class="count-pill" id="badgeBCA">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchProgram('BBA')">
+          BBA <span class="count-pill" id="badgeBBA">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchProgram('B.Com')">
+          B.Com (H) <span class="count-pill" id="badgeBCom">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchProgram('MBA')">
+          MBA <span class="count-pill" id="badgeMBA">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchProgram('MCA')">
+          MCA <span class="count-pill" id="badgeMCA">0</span>
+        </button>
+      </div>
+
+      <!-- Live Search & Sort -->
+      <div class="filter-tools">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" placeholder="Search by name, roll no, city, email..." oninput="handleSearch()" />
+        </div>
+        <select id="stateFilter" class="btn-action" onchange="handleSearch()">
+          <option value="">All States</option>
+        </select>
+        <select id="genderFilter" class="btn-action" onchange="handleSearch()">
+          <option value="">All Genders</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- MAIN SCREEN: Student Primary Cards Grid -->
+    <div class="students-grid" id="studentsGrid">
+      <div class="empty-state">
+        <i class="fa-solid fa-graduation-cap"></i>
+        <h3>Parsing Master Excel File...</h3>
+        <p>Loading records, photographs, and signatures directly from the repository.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       SECONDARY SCREEN: BALANCE DETAILS DRAWER (OFF-CANVAS)
+       ============================================================== -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeBalanceDrawer()"></div>
+
+  <div class="drawer-screen" id="balanceDrawer">
+    <div class="drawer-header">
+      <div>
+        <h2 id="drawerStudentName">Student Detailed Dossier</h2>
+        <p id="drawerStudentMeta">Program &bull; Application Details</p>
+      </div>
+      <button class="drawer-close" onclick="closeBalanceDrawer()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="drawer-body" id="drawerContent">
+      <!-- Dynamically rendered detailed balance fields -->
+    </div>
+  </div>
+
+  <!-- ==============================================================
+       JAVASCRIPT LOGIC
+       ============================================================== -->
+  <script>
+    // System State
+    const AUTH_PASS = "bingo";
+    const EXCEL_FILE_NAME = "Master Data Admission Session 2026-27.xlsx";
+    
+    let allStudents = [];
+    let activeProgram = "ALL";
+    let activeFilter = "";
+    let imageMap = {}; // key: "sheetName_row_col" -> base64 blob URL
+
+    // 1. Password Protection Logic
+    function handleAuth(e) {
+      e.preventDefault();
+      const input = document.getElementById('accessKey').value.trim();
+      const errorDiv = document.getElementById('authError');
+      
+      if (input === AUTH_PASS) {
+        document.getElementById('lockScreen').style.display = 'none';
+        sessionStorage.setItem('gjimt_auth', 'unlocked');
+        loadWorkbookFromRepo();
+      } else {
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 3000);
+      }
+    }
+
+    function togglePasswordVisibility() {
+      const input = document.getElementById('accessKey');
+      const icon = document.getElementById('pwdToggle');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // Check if already authenticated in this session
+    window.addEventListener('DOMContentLoaded', () => {
+      if (sessionStorage.getItem('gjimt_auth') === 'unlocked') {
+        document.getElementById('lockScreen').style.display = 'none';
+        loadWorkbookFromRepo();
+      }
+    });
+
+    // 2. Excel Loading Engine
+    async function loadWorkbookFromRepo() {
+      const statusEl = document.getElementById('syncStatus');
+      try {
+        statusEl.innerHTML = `<span><i class="fa-solid fa-cloud-arrow-down"></i> Loading <strong>${EXCEL_FILE_NAME}</strong> from repository...</span>`;
+        
+        // Fetch raw array buffer
+        const response = await fetch(EXCEL_FILE_NAME);
+        if (!response.ok) {
+          throw new Error(`File not found via HTTP fetch (Status: ${response.status})`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        await parseExcelArrayBuffer(arrayBuffer);
+        
+        statusEl.innerHTML = `<span><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Successfully synchronized master database with Excel repository.</span> <span style="font-size:12px; font-weight:600;">GJIMT Admissions 2026</span>`;
+      } catch (err) {
+        console.warn("Auto-fetch fallback activated:", err);
+        statusEl.className = "sync-status-bar";
+        statusEl.style.background = "#fffbeb";
+        statusEl.style.borderColor = "#fef3c7";
+        statusEl.style.color = "#b45309";
+        statusEl.innerHTML = `<span><i class="fa-solid fa-triangle-exclamation"></i> <strong>Note:</strong> Auto-fetch from server paused (e.g. local file protocol). Click <strong>"Switch/Reload Excel"</strong> at top right to select <code>${EXCEL_FILE_NAME}</code> directly.</span>`;
+      }
+    }
+
+    function handleManualExcel(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      const statusEl = document.getElementById('syncStatus');
+      statusEl.innerHTML = `<span><i class="fa-solid fa-spinner fa-spin"></i> Reading uploaded file: ${file.name}...</span>`;
+      
+      reader.onload = async function(e) {
+        await parseExcelArrayBuffer(e.target.result);
+        statusEl.innerHTML = `<span><i class="fa-solid fa-circle-check" style="color: #10b981;"></i> Loaded: <strong>${file.name}</strong></span>`;
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // 3. Deep Parser: SheetJS + JSZip Embedded Drawing Media Extractor
+    async function parseExcelArrayBuffer(buffer) {
+      allStudents = [];
+      imageMap = {};
+
+      try {
+        // Step A: Extract drawings & images via JSZip
+        const zip = await JSZip.loadAsync(buffer);
+        await extractEmbeddedImages(zip);
+
+        // Step B: Extract Sheet Data via SheetJS
+        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+        
+        // Map sheets
+        const sheetMap = {
+          'BCA': 'BCA',
+          'BBA': 'BBA',
+          'B.Com': 'B.Com',
+          'BCom': 'B.Com',
+          'MBA': 'MBA',
+          'MCA': 'MCA',
+          'MCA1': 'MCA'
+        };
+
+        let uniqueStates = new Set();
+
+        workbook.SheetNames.forEach(rawSheetName => {
+          const normalized = rawSheetName.trim();
+          let progTag = null;
+          for (const key in sheetMap) {
+            if (normalized.toLowerCase().includes(key.toLowerCase())) {
+              progTag = sheetMap[key];
+              break;
+            }
+          }
+          if (!progTag) return;
+
+          const worksheet = workbook.Sheets[rawSheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+          if (!rows || rows.length < 2) return;
+
+          const headers = rows[0].map(h => String(h || '').trim());
+          
+          // Index key columns
+          let nameIdx = -1, rollIdx = -1, fatherIdx = -1, emailIdx = -1, phoneIdx = -1;
+          let dobIdx = -1, cityIdx = -1, stateIdx = -1, aadharIdx = -1, bloodIdx = -1, genderIdx = -1;
+          let m12Idx = -1, tot12Idx = -1, boardIdx = -1, p12Idx = -1;
+
+          headers.forEach((h, idx) => {
+            const low = h.toLowerCase();
+            if (nameIdx === -1 && low.includes('name') && !low.includes('father') && !low.includes('mother') && !low.includes('school') && !low.includes('college') && !low.includes('board') && !low.includes('exam')) {
+              nameIdx = idx;
+            }
+            if (rollIdx === -1 && (low.includes('roll') || low.includes('s.no') || low.includes('sr. no'))) rollIdx = idx;
+            if (fatherIdx === -1 && low.includes('father') && low.includes('name')) fatherIdx = idx;
+            if (emailIdx === -1 && (low.includes('student email') || low.includes('e mail id') || low.includes('email'))) emailIdx = idx;
+            if (phoneIdx === -1 && (low.includes('contact') || low.includes('mobile') || low.includes('phone'))) phoneIdx = idx;
+            if (dobIdx === -1 && low.includes('dob')) dobIdx = idx;
+            if (cityIdx === -1 && low.includes('city')) cityIdx = idx;
+            if (stateIdx === -1 && low === 'state') stateIdx = idx;
+            if (aadharIdx === -1 && (low.includes('aadhaar') || low.includes('aadhar'))) aadharIdx = idx;
+            if (bloodIdx === -1 && low.includes('blood')) bloodIdx = idx;
+            if (genderIdx === -1 && low.includes('gender')) genderIdx = idx;
+            if (m12Idx === -1 && low.includes('marks obtained in 12')) m12Idx = idx;
+            if (tot12Idx === -1 && low.includes('total marks in 12')) tot12Idx = idx;
+            if (boardIdx === -1 && low.includes('board') && low.includes('12')) boardIdx = idx;
+            if (p12Idx === -1 && (low.includes('12th percentage') || low.includes('12th passing year'))) p12Idx = idx;
+          });
+
+          for (let r = 1; r < rows.length; r++) {
+            const row = rows[r];
+            const studentName = nameIdx !== -1 ? String(row[nameIdx] || '').trim() : '';
+            if (!studentName || studentName.toLowerCase() === 'student name' || studentName.toLowerCase() === 'name') continue;
+
+            const stateVal = stateIdx !== -1 ? String(row[stateIdx] || '').trim() : '';
+            if (stateVal) uniqueStates.add(stateVal);
+
+            // Construct Balance Details Dictionary
+            let balanceDetails = [];
+            headers.forEach((h, cIdx) => {
+              const val = row[cIdx];
+              if (val !== undefined && val !== null && String(val).trim() !== '' && String(val).trim() !== 'undefined') {
+                let formattedVal = val;
+                if (val instanceof Date) {
+                  formattedVal = val.toLocaleDateString('en-GB');
+                }
+                balanceDetails.push({ label: h, value: formattedVal });
+              }
+            });
+
+            // Locate Photo & Signature Images
+            // Key based on row index and standard columns
+            let photoUrl = getStudentImage(rawSheetName, r, 'photo');
+            let signUrl = getStudentImage(rawSheetName, r, 'sign');
+
+            // Format percentages
+            let marksPct = '';
+            if (m12Idx !== -1 && tot12Idx !== -1 && row[m12Idx] && row[tot12Idx]) {
+              const ob = parseFloat(row[m12Idx]);
+              const tot = parseFloat(row[tot12Idx]);
+              if (!isNaN(ob) && !isNaN(tot) && tot > 0) {
+                marksPct = `${((ob / tot) * 100).toFixed(1)}%`;
+              }
+            }
+
+            allStudents.push({
+              id: `${progTag}_${r}`,
+              program: progTag,
+              sheetName: rawSheetName,
+              rowIndex: r,
+              name: studentName,
+              rollNo: rollIdx !== -1 && row[rollIdx] ? String(row[rollIdx]) : `#${r}`,
+              fatherName: fatherIdx !== -1 ? String(row[fatherIdx] || 'N/A') : 'N/A',
+              email: emailIdx !== -1 ? String(row[emailIdx] || 'N/A') : 'N/A',
+              phone: phoneIdx !== -1 ? String(row[phoneIdx] || 'N/A') : 'N/A',
+              city: cityIdx !== -1 ? String(row[cityIdx] || 'N/A') : 'N/A',
+              state: stateVal || 'N/A',
+              blood: bloodIdx !== -1 ? String(row[bloodIdx] || 'N/A') : 'N/A',
+              gender: genderIdx !== -1 ? String(row[genderIdx] || 'N/A') : 'N/A',
+              board: boardIdx !== -1 ? String(row[boardIdx] || 'N/A') : 'CBSE/PSEB',
+              pct12: marksPct || 'N/A',
+              photo: photoUrl,
+              sign: signUrl,
+              balance: balanceDetails
+            });
+          }
+        });
+
+        // Update State Filter Dropdown
+        const stateSelect = document.getElementById('stateFilter');
+        stateSelect.innerHTML = '<option value="">All States</option>';
+        Array.from(uniqueStates).sort().forEach(st => {
+          if (st.length > 1) {
+            stateSelect.innerHTML += `<option value="${st}">${st}</option>`;
+          }
+        });
+
+        updateCounters();
+        renderStudentCards();
+
+      } catch (e) {
+        console.error("Parsing failure:", e);
+        document.getElementById('studentsGrid').innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-triangle-exclamation" style="color: #ef4444;"></i>
+            <h3>Error parsing Excel File</h3>
+            <p>${e.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    // 4. JSZip XML Anchor Extractor for Embedded Photos and Signatures
+    async function extractEmbeddedImages(zip) {
+      try {
+        const drawingFiles = Object.keys(zip.files).filter(f => f.startsWith('xl/drawings/drawing') && f.endsWith('.xml'));
+        
+        for (const drawFile of drawingFiles) {
+          const drawXmlStr = await zip.files[drawFile].async('string');
+          const relFile = drawFile.replace('xl/drawings/', 'xl/drawings/_rels/') + '.rels';
+          
+          if (!zip.files[relFile]) continue;
+          const relXmlStr = await zip.files[relFile].async('string');
+
+          // Parse rels
+          const relParser = new DOMParser();
+          const relDoc = relParser.parseFromString(relXmlStr, 'application/xml');
+          const relNodes = relDoc.getElementsByTagName('Relationship');
+          const relMap = {};
+          for (let i = 0; i < relNodes.length; i++) {
+            const id = relNodes[i].getAttribute('Id');
+            const target = relNodes[i].getAttribute('Target').replace('../', 'xl/');
+            relMap[id] = target;
+          }
+
+          // Parse drawings xml
+          const drawDoc = relParser.parseFromString(drawXmlStr, 'application/xml');
+          const anchors = drawDoc.querySelectorAll('twoCellAnchor, oneCellAnchor');
+          
+          for (let i = 0; i < anchors.length; i++) {
+            const anchor = anchors[i];
+            const fromRowEl = anchor.querySelector('from row');
+            const fromColEl = anchor.querySelector('from col');
+            const blipEl = anchor.querySelector('blip');
+
+            if (fromRowEl && fromColEl && blipEl) {
+              const row = parseInt(fromRowEl.textContent);
+              const col = parseInt(fromColEl.textContent);
+              const rId = blipEl.getAttribute('r:embed') || blipEl.getAttribute('rId') || blipEl.getAttribute('embed');
+              const mediaPath = relMap[rId];
+
+              if (mediaPath && zip.files[mediaPath]) {
+                const imgData = await zip.files[mediaPath].async('base64');
+                const ext = mediaPath.split('.').pop().toLowerCase();
+                const mime = ext === 'png' ? 'image/png' : 'image/jpeg';
+                const base64Url = `data:${mime};base64,${imgData}`;
+                
+                // Store in memory lookup
+                const key = `${drawFile}_${row}_${col}`;
+                imageMap[key] = base64Url;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Image extraction notice:", err);
+      }
+    }
+
+    function getStudentImage(sheetName, rowIndex, type) {
+      // Direct lookup from extracted images based on sheet drawing patterns
+      // BCA: Drawing1, Col 1 is Photo, Col 2 is Sign
+      // BBA: Drawing2, Col 4 is Photo, Col 5 is Sign
+      // B.Com: Drawing3, Col 47 is Photo, Col 48 is Sign
+      // MBA: Drawing4, Col 2 is Photo, Col 3 is Sign
+      // MCA: Drawing5, Col 54 is Photo, Col 55 is Sign
+      
+      const s = sheetName.toUpperCase();
+      let drawName = 'drawing1.xml';
+      let photoCol = 1;
+      let signCol = 2;
+
+      if (s.includes('BCA')) {
+        drawName = 'drawing1.xml';
+        photoCol = 1;
+        signCol = 2;
+      } else if (s.includes('BBA')) {
+        drawName = 'drawing2.xml';
+        photoCol = 4;
+        signCol = 5;
+      } else if (s.includes('B.COM') || s.includes('COM')) {
+        drawName = 'drawing3.xml';
+        photoCol = 47;
+        signCol = 48;
+      } else if (s.includes('MBA')) {
+        drawName = 'drawing4.xml';
+        photoCol = 2;
+        signCol = 3;
+      } else if (s.includes('MCA')) {
+        drawName = 'drawing5.xml';
+        photoCol = 54;
+        signCol = 55;
+      }
+
+      const targetCol = type === 'photo' ? photoCol : signCol;
+      const key = `xl/drawings/${drawName}_${rowIndex}_${targetCol}`;
+      
+      // Fallback: check adjacent columns (+/- 1)
+      if (imageMap[key]) return imageMap[key];
+      if (imageMap[`xl/drawings/${drawName}_${rowIndex}_${targetCol - 1}`]) return imageMap[`xl/drawings/${drawName}_${rowIndex}_${targetCol - 1}`];
+      if (imageMap[`xl/drawings/${drawName}_${rowIndex}_${targetCol + 1}`]) return imageMap[`xl/drawings/${drawName}_${rowIndex}_${targetCol + 1}`];
+
+      return null;
+    }
+
+    // 5. Card Rendering and Dynamic Presentation
+    function renderStudentCards() {
+      const container = document.getElementById('studentsGrid');
+      const searchVal = document.getElementById('searchInput').value.trim().toLowerCase();
+      const stateVal = document.getElementById('stateFilter').value.trim().toLowerCase();
+      const genderVal = document.getElementById('genderFilter').value.trim().toLowerCase();
+
+      const filtered = allStudents.filter(st => {
+        const matchesProg = (activeProgram === 'ALL' || st.program === activeProgram);
+        const matchesSearch = !searchVal || 
+          st.name.toLowerCase().includes(searchVal) ||
+          st.rollNo.toLowerCase().includes(searchVal) ||
+          st.city.toLowerCase().includes(searchVal) ||
+          st.email.toLowerCase().includes(searchVal);
+        const matchesState = !stateVal || st.state.toLowerCase() === stateVal;
+        const matchesGender = !genderVal || st.gender.toLowerCase() === genderVal;
+        
+        return matchesProg && matchesSearch && matchesState && matchesGender;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fa-solid fa-user-slash"></i>
+            <h3>No student records found</h3>
+            <p>Try refining your search terms or selecting another program tab.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(st => {
+        const genderClass = st.gender.toLowerCase() === 'female' ? 'female' : 'male';
+        
+        return `
+          <div class="student-card">
+            <!-- Header bar -->
+            <div class="card-top-bar">
+              <span class="roll-pill">${st.program} &bull; ${st.rollNo}</span>
+              <div class="gender-caste-tags">
+                <span class="mini-tag ${genderClass}">${st.gender}</span>
+              </div>
+            </div>
+
+            <!-- Visuals: Photo + Signature & Core Details -->
+            <div class="card-id-visuals">
+              <div class="portrait-sign-container">
+                <div class="photo-frame">
+                  ${st.photo ? `<img src="${st.photo}" alt="${st.name}" loading="lazy" />` : `<i class="fa-solid fa-user photo-placeholder"></i>`}
+                </div>
+                <div class="signature-slot" title="Student Signature">
+                  ${st.sign ? `<img src="${st.sign}" alt="Signature" loading="lazy" />` : `<span class="sig-label">Signature N/A</span>`}
+                </div>
+              </div>
+
+              <div class="student-core-info">
+                <h3 class="student-name" title="${st.name}">${st.name}</h3>
+                <p class="parent-name">S/D of <strong>${st.fatherName}</strong></p>
+
+                <ul class="meta-list">
+                  <li title="${st.email}"><i class="fa-solid fa-envelope"></i> ${st.email}</li>
+                  <li><i class="fa-solid fa-phone"></i> ${st.phone}</li>
+                  <li><i class="fa-solid fa-location-dot"></i> ${st.city}, ${st.state}</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Key Academic Metrics -->
+            <div class="card-metrics-row">
+              <div class="metric-item">
+                <span class="m-label">12th Score</span>
+                <span class="m-val">${st.pct12}</span>
+              </div>
+              <div class="metric-item">
+                <span class="m-label">Board</span>
+                <span class="m-val">${st.board}</span>
+              </div>
+              <div class="metric-item">
+                <span class="m-label">Blood Grp</span>
+                <span class="m-val">${st.blood}</span>
+              </div>
+            </div>
+
+            <!-- Action Button for Balance Details -->
+            <div class="card-actions-bar">
+              <button class="btn-balance" onclick="openBalanceDrawer('${st.id}')">
+                <i class="fa-solid fa-id-card-clip"></i> Balance Details & Full Record
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 6. Navigation Tabs & Statistics
+    function switchProgram(prog) {
+      activeProgram = prog;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      renderStudentCards();
+    }
+
+    function handleSearch() {
+      renderStudentCards();
+    }
+
+    function updateCounters() {
+      const counts = { BCA: 0, BBA: 0, 'B.Com': 0, MBA: 0, MCA: 0 };
+      allStudents.forEach(s => {
+        if (counts[s.program] !== undefined) counts[s.program]++;
+      });
+
+      document.getElementById('badgeAll').textContent = allStudents.length;
+      document.getElementById('badgeBCA').textContent = counts['BCA'] || 0;
+      document.getElementById('badgeBBA').textContent = counts['BBA'] || 0;
+      document.getElementById('badgeBCom').textContent = counts['B.Com'] || 0;
+      document.getElementById('badgeMBA').textContent = counts['MBA'] || 0;
+      document.getElementById('badgeMCA').textContent = counts['MCA'] || 0;
+      document.getElementById('statTotalStudents').textContent = allStudents.length;
+    }
+
+    // 7. Balance Details Screen (Drawer) Logic
+    function openBalanceDrawer(studentId) {
+      const student = allStudents.find(s => s.id === studentId);
+      if (!student) return;
+
+      document.getElementById('drawerStudentName').textContent = student.name;
+      document.getElementById('drawerStudentMeta').textContent = `${student.program} Program &bull; Admission Session 2026-27`;
+
+      // Group fields into structured sections
+      const sections = {
+        "Personal & Contact Particulars": [],
+        "Parental & Family Background": [],
+        "Academic & Examination Credentials": [],
+        "Institutional & Extracurricular Activities": []
+      };
+
+      student.balance.forEach(field => {
+        const lbl = field.label.toLowerCase();
+        if (lbl.includes('father') || lbl.includes('mother') || lbl.includes('family') || lbl.includes('only child')) {
+          sections["Parental & Family Background"].push(field);
+        } else if (lbl.includes('10th') || lbl.includes('12th') || lbl.includes('graduation') || lbl.includes('marks') || lbl.includes('school') || lbl.includes('board') || lbl.includes('cgpa')) {
+          sections["Academic & Examination Credentials"].push(field);
+        } else if (lbl.includes('sport') || lbl.includes('event') || lbl.includes('stage') || lbl.includes('art') || lbl.includes('reason')) {
+          sections["Institutional & Extracurricular Activities"].push(field);
+        } else {
+          sections["Personal & Contact Particulars"].push(field);
+        }
+      });
+
+      let contentHtml = '';
+      for (const [sectionName, fields] of Object.entries(sections)) {
+        if (fields.length === 0) continue;
+        contentHtml += `
+          <div class="detail-section">
+            <h4 class="section-title"><i class="fa-solid fa-chevron-right" style="color:var(--gjimt-gold);"></i> ${sectionName}</h4>
+            <div class="detail-grid">
+              ${fields.map(f => `
+                <div class="field-pair">
+                  <div class="label">${f.label}</div>
+                  <div class="val">${f.value}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      document.getElementById('drawerContent').innerHTML = contentHtml;
+      document.getElementById('drawerOverlay').classList.add('active');
+      document.getElementById('balanceDrawer').classList.add('open');
+    }
+
+    function closeBalanceDrawer() {
+      document.getElementById('drawerOverlay').classList.remove('active');
+      document.getElementById('balanceDrawer').classList.remove('open');
+    }
+  </script>
+</body>
+</html>
